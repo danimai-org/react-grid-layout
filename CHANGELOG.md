@@ -1,562 +1,972 @@
 # Changelog
 
-### 4.4.6 (Sep 27, 2023)
-
-- Fix: state inconsistency in React 18 #699
-- Internal: devDependencies updates
-
-### 4.4.5 (Apr 26, 2022)
-
-- Fix: `grid` prop unused in `handleDragStop` #621
-- Fix: `children` prop missing in TypeScript definition #648
-- Internal: Various devDep updates
-
-### 4.4.4 (Aug 27, 2021)
-
-- Fix: Ensure `documentElement.style` actually exists. Fixes crashes in some obscure environments. #574 #575
-- Fix: Add react/react-dom as `peerDependencies` again to fix Yarn PnP
-- Size: Replace `classnames` with `clsx` to save a few bytes
-- Internal: Additional tests on `ref` functionality and additional README content on `nodeRef`
-- Internal: Lots of devDependencies updates
-- Docs: Various README and demo updates, see git commits
-
-### 4.4.3 (June 8, 2020)
-
-- Add `nodeRef` to TypeScript definitions
-
-### 4.4.2 (May 14, 2020)
-
-- Fix: Remove "module" from package.json (it is no longer being built)
-  - Fixes #482
-
-### 4.4.1 (May 12, 2020)
-
-- Fix: Remove "module" definition in package.json
-  - Giving up on this: there isn't a great reason to publish modules
-    here as they won't be significantly tree-shook, and it bloats
-    the published package.
-  - Fixes incompatiblity in 4.4.0 with webpack, where webpack is now
-    selecting "module" because "browser" is no longer present.
-
-### 4.4.0 (May 12, 2020)
-
-- Add `nodeRef`:
-  - If running in React Strict mode, ReactDOM.findDOMNode() is deprecated.
-    Unfortunately, in order for `<Draggable>` to work properly, we need raw access
-    to the underlying DOM node. If you want to avoid the warning, pass a `nodeRef`
-    as in this example:
-    ```js
-    function MyComponent() {
-      const nodeRef = React.useRef(null);
-      return (
-        <Draggable nodeRef={nodeRef}>
-          <div ref={nodeRef}>Example Target</div>
-        </Draggable>
-      );
-    }
-    ````
-    This can be used for arbitrarily nested components, so long as the ref ends up
-    pointing to the actual child DOM node and not a custom component.
-    Thanks to react-transition-group for the inspiration.
-    `nodeRef` is also available on `<DraggableCore>`.
-- Remove "browser" field in "package.json":
-  - There is nothing special in the browser build that is actually practical
-    for modern use. The "browser" field, as defined in 
-    https://github.com/defunctzombie/package-browser-field-spec#overview,
-    indicates that you should use it if you are directly accessing globals,
-    using browser-specific features, dom manipulation, etc.
-    
-    React components like react-draggable are built to do minimal raw
-    DOM manipulation, and to always gate this behind conditionals to ensure
-    that server-side rendering still works. We don't make any changes
-    to any of that for the "browser" build, so it's entirely redundant.
-    
-    This should also fix the "Super expression must either be null or
-    a function" error (#472) that some users have experienced with particular
-    bundler configurations.
+## 1.4.4 (Nov 28, 2023)
 
-    The browser build may still be imported at "build/web/react-draggable.min.js".
-    This is to prevent breakage only. The file is no longer minified to prevent
-    possible [terser bugs](https://github.com/terser/terser/issues/308).
-  - The browser build will likely be removed entirely in 5.0.
-- Fix: Make `bounds` optional in TypeScript [#473](https://github.com/strml/react-draggable/pull/473)
+### Bugfixes
 
-### 4.3.1 (Apr 11, 2020) 
+- Fix position logic when draggable item is dragged into the grid. We no longer use the deprecated / non-standard `e.nativeEvent.layer{X,Y}` properties. [#1915](https://github.com/react-grid-layout/react-grid-layout/pull/1915)
+- Fix drag values according to containerPadding. Previously, when dragging an item, the intuited position within the grid was *not* modified by `containerPadding`, causing it to off by that value. On most grids, this is only set to `[10, 10]`, so this may not have been noticeable, but for higher values it was very obvious. Thanks @hywlss9. [#1323](https://github.com/react-grid-layout/react-grid-layout/pull/1323)
+- Various lint/dependency fixes.
 
-> This is a bugfix release.
+## 1.4.3 (Nov 8, 2023)
 
-- Happy Easter!
-- Fixed a serious bug that caused `<DraggableCore>` not to pass styles.
-  - `React.cloneElement` has an odd quirk. When you do:
-    ```js
-    return React.cloneElement(this.props.children, {style: this.props.children.props.style});
-    ```
-    , `style` ends up undefined.
-- Fixed a bug that caused debug output to show up in the build. 
-  - `babel-loader` cache does not invalidate when it should. I had modified webpack.config.js in the last version but it reused stale cache.
+### Bugfixes
 
-### 4.3.0 (Apr 10, 2020)
+- Set `activeDrag` in `onDragStart`. Fixes issues where, if no drag is performed, the `onDragStop` handler would error out and the drag would freeze. [#1923](https://github.com/react-grid-layout/react-grid-layout/pull/1923)
+  - THis fixes some broader issues with React 18 but testing library support is still not complete.
 
-- Fix setState warning after dismount if drag still active. Harmless, but prints a warning. [#424](https://github.com/mzabriskie/react-draggable/pull/424)
-- Fix a long-standing issue where text inputs would unfocus upon dismounting a `<Draggable>`.
-  - Thanks @schnerd, [#450](https://github.com/mzabriskie/react-draggable/pull/450)
-- Fix an issue where the insides of a `<Draggable>` were not scrollable on touch devices due to the outer container having `touch-action: none`.
-    - This was a long-standing hack for mobile devices. Without it, the page will scroll while you drag the element.
-    - The new solution will simply cancel the touch event `e.preventDefault()`. However, due to changes in Chrome >= 56, this is only possible on 
-      non-passive event handlers. To fix this, we now add/remove the touchEvent on lifecycle events rather than using React's event system.
-    - [#465](https://github.com/mzabriskie/react-draggable/pull/465)
-- Upgrade devDeps and fix security warnings. None of them actually applied to this module.
+## 1.4.2 (Sep 22, 2023)
 
-### 4.2.0 (Dec 2, 2019)
+### Bugfixes
 
-- Fix: Apply `scale` parameter also while dragging an element. [#438](https://github.com/mzabriskie/react-draggable/pull/438)
-- Fix: Don't ship `process.env.DRAGGABLE_DEBUG` checks in cjs/esm. [#445](https://github.com/mzabriskie/react-draggable/pull/445)
+- Resizing in every directionnow obeys preventCollision restrictions [#1937](https://github.com/react-grid-layout/react-grid-layout/pull/1937)
 
-### 4.1.0 (Oct 25, 2019)
+## 1.4.1 (Sep 12, 2023)
 
-- Add `"module"` to `package.json`. There are now three builds:
-  * **`"main"`**: ES5-compatible CJS build, suitable for most use cases with maximum compatibility.
-    - For legacy reasons, this has exports of the following shape, which ensures no surprises in CJS or ESM polyfilled environments:
-      ```js
-      module.exports = Draggable;
-      module.exports.default = Draggable;
-      module.exports.DraggableCore = DraggableCore;
-      ```
-  * **`"web"`**: Minified UMD bundle exporting to `window.ReactDraggable` with the same ES compatibility as the "main" build.
-  * **`"module"`**: ES6-compatible build using import/export.
+### Bugfixes
 
-  This should fix issues like https://github.com/STRML/react-resizable/issues/113 while allowing modern bundlers to consume esm modules in the future.
-  
-  No compatibility changes are expected.
+- Fixed bug where height/width could not be resized if `h = 0` or `w = 0` and 0 `containerPadding`. [#1931](https://github.com/react-grid-layout/react-grid-layout/pull/1931)
+- Revert `fast-equals` to @4. Fixes incompatibility with `Create-React-App@5`.
 
-### 4.0.3 (Sep 10, 2019)
+## 1.4.0 (Sep 11, 2023)
 
-- Add typings and sourcemap to published npm package.
-  - This compresses well so it does not bloat the package by much. Would be nice if npm had another delivery mechanism for optional modes, like web/TS.
+Hey, it's been a long time! Taking a year and a half off is a pretty "open-source" thing to do, thanks for bearing with me.
 
-### 4.0.2 (Sep 9, 2019)
+### New Features
 
-- Republish to fix packaging errors. Fixes #426
+- **Grid items can now be resized left and up!** Thanks to @ludovic and @dseif for all the hard work they did on this. [#1917](https://github.com/react-grid-layout/react-grid-layout/pull/1917)
+  - To use, specify `resizeHandles` directions on your `<GridItem>`s. See [the example](/test/examples/20-resizable-handles.jsx) for more on how to do this.
+  - See also [the demo](https://react-grid-layout.github.io/react-grid-layout/examples/20-resizable-handles.html).
+- `<WidthProvider>` now uses a `ResizeObserver` instead of hooking into the window's `'resize'` event. [#1839](https://github.com/react-grid-layout/react-grid-layout/pull/1839)
+  - This should not be breaking for any users but introduces a new dependency, [resize-observer-polyfill](https://www.npmjs.com/package/resize-observer-polyfill). It will not be imported unless you use `<WidthProvider>`.
 
-### 4.0.1 (Sep 7, 2019)
+### Bugfixes
 
-- Republish of 4.0.0 to fix a mistake where webpack working files were erroneously included in the package. Use this release instead as it is much smaller.
+- Fixed `horizontal` compact not always moving grid elements as far left as possible. [#1822](https://github.com/react-grid-layout/react-grid-layout/pull/1822)
+- Fixed a bug when `allowOverlap={true}` and `compactType={null}`, where collisions would still be processed. [#1782](https://github.com/react-grid-layout/react-grid-layout/pull/1782)
+- Fixed `onResizeStop` and `onDragStop` callbacks not returning updated layout. [#1613](https://github.com/react-grid-layout/react-grid-layout/pull/1613)
+- An item will now rerender when `data-grid` props change. [#718](https://github.com/react-grid-layout/react-grid-layout/issues/718)
+- Corrected draggableHandle configuration in static elements example [#1826](https://github.com/react-grid-layout/react-grid-layout/pull/1826)
 
-### 4.0.0 (Aug 26, 2019)
+### Internal Changes
 
-> This is a major release due to a React compatibility change. If you are already on React >= 16.3, this upgrade is non-breaking.
+- Various dependency upgrades and upgraded tests.
+- Removed long-deprecated `_grid` property.
+- Various doc updates.
 
-- *Requires React 16.3+ due to use of `getDerivedStateFromProps`.
-  - See https://reactjs.org/blog/2018/03/27/update-on-async-rendering.html for why this was done.
-- Upgraded build environment to Babel 7.
-- Switched build from rollup to webpack@4 to simplify.
-- Added CJS build that does not bundle `classNames` & `prop-types` into the build. This should result in marginally smaller bundle sizes for applications that use bundlers.
-- Removed Bower build.
+## 1.3.4 (Feb 21, 2022)
 
-### 3.3.2 (Aug 16, 2019)
+### Bugfixes
 
-- Use `all: inherit` instead of `background: transparent;` to fix selection styles.
-  - Fixes https://github.com/mzabriskie/react-draggable/issues/315
+- Add `e.stopPropagation()` on drag events to better support nested grids. Thanks @rogerfar [#1494](https://github.com/react-grid-layout/react-grid-layout/pull/1494).
 
-### 3.3.1 (Aug 12, 2019)
+### Internal Changes
 
-- Fix React 16.9 `componentWillMount` deprecation.
+- Various dependency upgrades.
 
-### 3.3.0 (Apr 18, 2019)
+## 1.3.3 (Jan 24, 2022)
 
-- Addition of `positionOffset` prop, which can be Numbers (px) or string percentages (like `"10%"`). See the README for more.
+This was a quick release to improve package size and dependency use. Thanks @salvoravida [#1655](https://github.com/react-grid-layout/react-grid-layout/pull/1655)
 
-### 3.2.1 (Mar 1, 2019)
+### Bugfixes
 
-- Reverted https://github.com/mzabriskie/react-draggable/pull/361.
+- Removed `coverage/` folder from npm package to save size
+- Moved eslint parser to `devDependencies`
 
-### ~3.2.0 (Feb 27, 2019)~
+## 1.3.2 (Jan 24, 2022)
 
-> Note: this release has been pulled due to an inadvertent breaking change. See https://github.com/mzabriskie/react-draggable/issues/391
+### Internal Changes
 
-- Feature: `defaultPosition` now allows string offsets (like {x: '10%', y: '10%'}) then calculates deltas from there. See the examples and the PR [#361](https://github.com/mzabriskie/react-draggable/pull/361/). Thanks to @tnrich and @eric-burel.
-- Bugfix: Export `DraggableEvent` type for Flow consumers. Thanks @elie222.
+- Package size reduced by ~30% by removing source in `dist/` source maps.
+- Various tests added (thanks @imagineLife!)
+- New GitHub Actions flow for PRs
 
-### 3.1.1 (Dec 21, 2018)
+## 1.3.1 (Nov 29, 2021)
 
-- Bugfix: Minor type change on DraggableEventHandler TypeScript export ([#374](https://github.com/mzabriskie/react-draggable/pull/374))
+### Bugfixes
 
-### 3.1.0 (Dec 21, 2018)
+- Fix `allowOverlap` not firing `onLayoutChange()`. [#1620](https://github.com/react-grid-layout/react-grid-layout/pull/1620)
+  - This was due to a short-circuiting of internal logic that did not properly clone the `layout` prop.
 
-- Feature: Added `scale` prop ([#352](https://github.com/mzabriskie/react-draggable/pull/352))
-  - Thanks, @wootencl
-- Bugfix: Remove process.browser which is missing in browser ([#329]((https://github.com/mzabriskie/react-draggable/pull/329))
-- Bugfix: Fix selection api on IE ([#292](https://github.com/mzabriskie/react-draggable/pull/292))
-- Bugfix: Fixes some issues in the type definitions for TypeScript ([#331]((https://github.com/mzabriskie/react-draggable/pull/331))
-- Bugfix: Fix compare where portal elements are different instance to main window ([#359]((https://github.com/mzabriskie/react-draggable/pull/359))
+### Internal Changes
 
-### 3.0.5 (Jan 11, 2018)
+- Replace `classnames` with `clsx` for smaller package size. (#1543)
 
-- Bugfix: Fix crash in test environments during removeUserSelectStyles().
+## 1.3.0 (Aug 27, 2021)
 
-### 3.0.4 (Nov 27, 2017)
+### New Features
 
-- Bugfix: Fix "Cannot call property 'call' of undefined" (matchesSelector)
-  - Fixes [#300](https://github.com/mzabriskie/react-draggable/issues/300)
+- `allowOverlap` prop, when `true`, allows overlapping grid items. [#1470](https://github.com/react-grid-layout/react-grid-layout/pull/1470)
+- Add `onDropDragOver` callback. [#1395](https://github.com/react-grid-layout/react-grid-layout/pull/1395)
+  - Use this callback to dynamically adjust the `droppingItem` based on what is being dragged over. Return `w` and `h` to adjust the item. It is then [spread into the dropping placeholder](https://github.com/react-grid-layout/react-grid-layout/pull/1395/files#diff-83ab569936bfd4bf0460a4f23653ecbe8bc88509062c95e75c9402218b2b8733R609).
+  - This callback has the type:
+    - `onDragOver: (e: DragOverEvent) => { w: number, h: number } | false;`
+    - Return `false` to short-circuit the dragover.
 
-### 3.0.3 (Aug 31, 2017)
+### Bugfixes
 
-- Bugfix: Fix deprecation warnings caused by `import * as React` (Flow best practice).
-  - See https://github.com/facebook/react/issues/10583
+- Remove sorting when `compactType` is `null`. [#1474](https://github.com/react-grid-layout/react-grid-layout/pull/1474)
+- Droppable fixes for Chrome behavior. [#1442](https://github.com/react-grid-layout/react-grid-layout/issues/1442) [#1448](https://github.com/react-grid-layout/react-grid-layout/issues/1442)
+- Allow `null` children as a convenience so that inline expressions don't break the library. [#1296](https://github.com/react-grid-layout/react-grid-layout/pull/1296)
+- Various dependency upgrades.
 
-### 3.0.2 (Aug 22, 2017)
+### Documentation
 
-> 3.0.0 and 3.0.1 have been unpublished due to a large logfile making it into the package.
+- Add docs on using custom components as grid children.
+- Note required class on resizable handles for proper styling.
 
-- Bugfix: Tweaked `.npmignore`.
+## 1.2.5 (May 10, 2021)
 
-### 3.0.1 (Aug 21, 2017)
+### Bugfixes
 
-- Bugfix: Flow-type should no longer throw errors for consumers.
-  - It appears Flow can't resolve a sub-package's interfaces.
+- Ensure no negative positions are possible when compacting
+  - Thanks @DonnyLi [#829](https://github.com/react-grid-layout/react-grid-layout/pull/829)
+  - Fixes [#535](https://github.com/react-grid-layout/react-grid-layout/issues/535)
+- Fix resizing on mobile. This was caused by the `ref` refactor to remove ReactDOM in 1.2.3.
+  - Fixes #[1458](https://github.com/react-grid-layout/react-grid-layout/issues/1458)
+  - Note: this upgrades `react-resizable` to `3.0.1`, which like our other deps, is only compatible with `React@>=16.3`.
 
-### 3.0.0 (Aug 21, 2017)
+### Documentation
 
-> Due to an export change, this is semver-major.
+- Document new arity of `resizeHandle` (`(axis: ResizeHandleAxis, ref: ReactRef<HTMLElement>) => React$Element`)
+- Remove references to the deprecated `verticalCompact` prop
 
-- Breaking: For TypeScript users, `<Draggable>` is now exported as `module.exports` and `module.exports.default`.
-- Potentially Breaking: We no longer set `user-select: none` on all elements while dragging. Instead,
-  the [`::selection` psuedo element](https://developer.mozilla.org/en-US/docs/Web/CSS/::selection) is used.
-  - Depending on your application, this could cause issues, so be sure to test.
-- Bugfix: Pass bounded `x`/`y` to callbacks. See [#226](https://github.com/mzabriskie/react-draggable/pull/226).
-- Internal: Upgraded dependencies.
+## 1.2.4 (Mar 18, 2021)
 
-### 2.2.6 (Apr 30, 2017)
+_This version fixes a serious render bug in `<WidthProvider>`. 1.2.3 should not be used._
 
-- Bugfix: Missing export default on TS definition (thanks @lostfictions)
-- Internal: TS test suite (thanks @lostfictions)
+### Bugfixes
 
-### 2.2.5 (Apr 28, 2017)
+- Fix failure to mount when layout is WidthProvider-wrapped and `measureBeforeMount` is `true`.
+  - Ref: [#1428](https://github.com/react-grid-layout/react-grid-layout/issues/1428)
+- `<WidthProvider>` no longer updates grid with if it has been set to 0. This prevents unnecessary updates
+  if the grid is set to `display: none;`. Thanks @405go [#1427](https://github.com/react-grid-layout/react-grid-layout/pull/1427)
 
-- Bugfix: Typescript definition was incorrect. [#244](https://github.com/mzabriskie/react-draggable/issues/244)
+## 1.2.3 (Mar 16, 2021)
 
-### 2.2.4 (Apr 27, 2017)
+### New Features
 
-- Internal: Moved `PropTypes` access to `prop-types` package for React 15.5 (prep for 16)
-- Feature: Added TypeScript definitions (thanks @erfangc)
-- Bugfix: No longer can erroneously add user-select style multiple times
-- Bugfix: OffsetParent with padding problem, fixes [#218](https://github.com/mzabriskie/react-draggable/issues/218)
-- Refactor: Misc example updates.
+- React-Grid-Layout is now fully compatible with `<React.StrictMode>`.
+  - Usage of `ReactDOM` has been removed by using `React.createRef()` inside RGL, and the new [`nodeRef` prop](https://github.com/react-grid-layout/react-draggable/blob/master/CHANGELOG.md#440-may-12-2020) in `react-draggable`.
 
-### 2.2.3 (Nov 21, 2016)
+## 1.2.2 (Mar 1, 2021)
 
-- Bugfix: Fix an issue with the entire window scrolling on a drag on iDevices. Thanks @JaneCoder. See #183
+### Bugfixes
 
-### 2.2.2 (Sep 14, 2016)
+- `onResize` as changed in 1.2.1 did not correctly save the layout. This is now fixed.
+  - As you might guess, we need more test coverage! PRs are very welcome, I'll buy you beers on Cashapp or Patreon or whatever you like.
 
-- Bugfix: Fix references to global when grabbing `SVGElement`, see [#162](https://github.com/mzabriskie/react-draggable/issues/162)
-- Bugfix: Get `ownerDocument` before `onStop`, fixes [#198](https://github.com/mzabriskie/react-draggable/issues/198)
+## 1.2.1 (Mar 1, 2021)
 
-### 2.2.1 (Aug 11, 2016)
+## Organization Changes
 
-- Bugfix: Fix `getComputedStyle` error: see [#186](https://github.com/mzabriskie/react-draggable/issues/186), #190
+We have created the [React-Grid-Layout Organization](https://github.com/react-grid-layout)! Therefore the repository
+[has moved](https://github.com/react-grid-layout/react-grid-layout).
 
-### 2.2.0 (Jul 29, 2016)
+This organization will grow as time goes on, and also contains the dependencies of RGL.
 
-- Addition: `offsetParent` property for an arbitrary ancestor for offset calculations.
-  - Fixes e.g. dragging with a floating `offsetParent`.
-    - Ref: https://github.com/mzabriskie/react-draggable/issues/170
-- Enhancement: Make this library iframe-aware.
-  - Ref: https://github.com/mzabriskie/react-draggable/pull/177
-  - Thanks to @acusti for tests
-- Bugfix: Lint/Test Fixes for new Flow & React versions
+### Bugfixes
 
-### 2.1.2 (Jun 5, 2016)
+- Use `classList` in Firefox onDragOver hack. [#1310](https://github.com/STRML/react-grid-layout/pull/1310)
+- Fix `scale` property. As `scale` support was added to dependencies, this caused double-compensation for scale, causing the dragged element not to follow the cursor. [#1393](https://github.com/STRML/react-grid-layout/pull/1393)
+- Fix horizontal compact mode issue where it inadventently would compact the bottom of the grid. This is not useful nor intended. Thanks @s4m3. [#1390](https://github.com/STRML/react-grid-layout/pull/1390)
+- Fix `onLayoutChange` sometimes not triggering on resize. We weren't cloning the layout item before modifying it. Thanks @xcqwan. [#1289](https://github.com/react-grid-layout/react-grid-layout/pull/1289)
 
-- Bugfix: Fix `return false` to cancel `onDrag` breaking on both old and new browsers due to missing `typeArg` and/or
-  unsupported `MouseEventConstructor`. Fixes [#164](https://github.com/mzabriskie/react-draggable/issues/164).
+### Internal Refactors
 
-### 2.1.1 (May 22, 2016)
+- Updated to the latest versions of all dependencies (enzyme, webpack, jest, flow).
+- Held back React@17 as enzyme is [not yet ready](https://github.com/enzymejs/enzyme/issues/2429).
 
-- Bugfix: `<DraggableCore>` wasn't calling back with the DOM node.
-- Internal: Rework test suite to use power-assert.
+## 1.2.0 (Nov 17, 2020)
 
-### 2.1.0 (May 20, 2016)
+### New Features
 
-- Fix improperly missed `handle` or `cancel` selectors if the event originates from a child of the handle or cancel.
-  - Fixes a longstanding issue, [#88](https://github.com/mzabriskie/react-draggable/pull/88)
-  - This was pushed to a minor release as there may be edge cases (perhaps workarounds) where this changes behavior.
-
-### 2.0.2 (May 19, 2016)
-
-- Fix `cannot access clientX of undefined` on some touch-enabled platforms.
-  - Fixes [#159](https://github.com/mzabriskie/react-draggable/pull/159),
-    [#118](https://github.com/mzabriskie/react-draggable/pull/118)
-- Fixed a bug with multi-finger multitouch if > 1 finger triggered an event at the same time.
-
-### 2.0.1 (May 19, 2016)
-
-- Finally fixed the IE10 constructor bug. Thanks @davidstubbs [#158](https://github.com/mzabriskie/react-draggable/pull/158)
-
-### 2.0.0 (May 10, 2016)
-
-- This is a breaking change. See the changes below in the beta releases.
-  - Note the changes to event callbacks and `position` / `defaultPosition`.
-- Changes from 2.0.0-beta3:
-  - Small bugfixes for Flow 0.24 compatibility.
-  - Don't assume `global.SVGElement`. Fixes JSDOM & [#123](https://github.com/mzabriskie/react-draggable/issues/123).
-
-### 2.0.0-beta3 (Apr 19, 2016)
-
-- Flow comments are now in the build. Other projects, such as React-Grid-Layout and React-Resizable, will
-  rely on them in their build and export their own comments.
-
-### 2.0.0-beta2 (Apr 14, 2016)
-
-- We're making a small deviation from React Core's controlled vs. uncontrolled scheme; for convenience,
-  `<Draggable>`s with a `position` property will still be draggable, but will revert to their old position
-  on drag stop. Attach an `onStop` or `onDrag` handler to synchronize state.
-  - A warning has been added informing users of this. If you make `<Draggable>` controlled but attach no callback
-    handlers, a warning will be printed.
-
-### 2.0.0-beta1 (Apr 14, 2016)
-
-- Due to API changes, this is a major release.
-
-#### Breaking Changes:
-
-- Both `<DraggableCore>` and `<Draggable>` have had their callback types changed and unified.
+- You can now customize your resizable handle component as supported by [`react-resizable`](https://github.com/STRML/react-resizable/blob/09fd865c0e1cc570caa8d67e44a2e56172d3d816/examples/ExampleLayout.js#L72). For example:
 
 ```js
-type DraggableEventHandler = (e: Event, data: DraggableData) => void | false;
-type DraggableData = {
-  node: HTMLElement,
-  // lastX + deltaX === x
-  x: number, y: number,
-  deltaX: number, deltaY: number,
-  lastX: number, lastY: number
-};
+<ReactGridLayout
+  resizeHandle={<span className="custom-handle custom-handle-se" />}
+  {...props}
+/>
 ```
 
-- The `start` option has been renamed to `defaultPosition`.
-- The `zIndex` option has been removed.
+Thanks @typeetfunc [#1303](https://github.com/STRML/react-grid-layout/pull/1303)
 
-#### Possibly Breaking Changes:
+### Bugfixes
 
-- When determining deltas, we now use a new method that checks the delta against the Draggable's `offsetParent`.
-  This method allows us to support arbitrary nested scrollable ancestors without scroll handlers!
-  - This may cause issues in certain layouts. If you find one, please open an issue.
+- Fix `onDrop` handler not firing on Firefox if you drop over the placeholder.
+  - Thanks @Charles-Lamoureux [#1333](https://github.com/STRML/react-grid-layout/pull/1333)
+- Various example style fixes [#1283](https://github.com/STRML/react-grid-layout/pull/1283) [#1299](https://github.com/STRML/react-grid-layout/pull/1299)
 
-#### Enhancements:
+## 1.1.1 (Sep 10, 2020)
 
-- `<Draggable>` now has a `position` attribute. Its relationship to `defaultPosition` is much like
-  `value` to `defaultValue` on React `<input>` nodes. If set, the position is fixed and cannot be mutated.
-  If empty, the component will manage its own state. See [#140](https://github.com/mzabriskie/react-draggable/pull/140)
-  for more info & motivations.
-- Misc. bugfixes.
+Republish to add `dist/` folder for unpkg use.
 
-### 1.4.0-beta1 (Apr 13, 2016)
+## 1.1.0 (Sep 3, 2020)
 
-- Major improvements to drag tracking that now support even nested scroll boxes.
-  - This revision is being done as a pre-release to ensure there are no unforeseen issues with the offset changes.
+### New Features
 
-### 1.3.7 (Apr 8, 2016)
+- You can now place resizable handles on all corners. Use the `resizeHandles` prop, which is default `['se']` (for 'southeast').
+  - Allowable values are:
+    - 's' - South handle (bottom-center)
+    - 'w' - West handle (left-center)
+    - 'e' - East handle (right-center)
+    - 'n' - North handle (top-center)
+    - 'sw' - Southwest handle (bottom-left)
+    - 'nw' - Northwest handle (top-left)
+    - 'se' - Southeast handle (bottom-right)
+    - 'ne' - Northeast handle (top-right)
+  - These values may be combined, e.g. `['s', 'se', 'e']`, to place three handles on the bottom side, bottom-right corner, and right side.
 
-- Fix `user-select` prefixing, which may be different than the prefix required for `transform`.
+### Bugfixes
 
-### 1.3.6 (Apr 8, 2016)
+- Revert `containerPadding` change in #1138. This change was meant to be types-only, but it caused a behavioral change where the default value of `containerPadding` became `[0, 0]`, not `margin`, which is default `[10, 10]`.
+- Add a few more files to `npmignore` to improve package size.
 
-- Republished after 1.3.5 contained a bundling error.
+## 1.0.0 (July 20, 2020)
 
-### 1.3.5 (Apr 8, 2016)
+React-Grid-Layout has been in `0.x` status for far too long. With the addition of some new features in this version and a breaking change, I thought it was time to move to a stable semver.
 
-- Add React v15 to devDeps. `<Draggable>` supports both `v0.14` and `v15`.
-- Enhancement: Clean up usage of browser prefixes; modern browsers will no longer use them.
-  - This also removes the duplicated `user-select` style that is created on the `<body>` while dragging.
-- Internal: Test fixes.
+### Breaking Changes
 
-### 1.3.4 (Mar 5, 2016)
+- `onDrop` callback now has a form more consistent with other callbacks.
+  - Previous type: `(elemParams: { x: number, y: number, w: number, h: number, e: Event }) => void`
+  - New type: `(layout: Layout, item: ?LayoutItem, e: Event) => void`
+  - Thanks @ceberhar [#1169](https://github.com/STRML/react-grid-layout/pull/1169)
+- Dropping Node 8 compatibility and testing due to devDep incompatibilities
 
-- Bugfix: Scrolling while dragging caused items to move unpredictably.
+### New Features
 
-### 1.3.3 (Feb 11, 2016)
+- Add `innerRef: React.Ref<'div'>` prop to expose a ref for the grid layout's outer div. Thanks @paul-sachs [#1176](https://github.com/STRML/react-grid-layout/pull/1176)
+- Add `isBounded` property to prevent dragging items outside of the grid. Thanks @artembykov [#1248](https://github.com/STRML/react-grid-layout/pull/1248)
 
-- Bugfix: #116: Android/Chrome are finicky; give up on canceling ghost clicks entirely.
+### Bugfixes
 
-### 1.3.2 (Feb 11, 2016)
+- Fix grid items stuck using percentages on first render. Thanks @rhbg [#1246](https://github.com/STRML/react-grid-layout/pull/1246)
 
-- Bugfix: #116: Child inputs not focusing on touch events.
+## 0.18.3 (Mar 16, 2020)
 
-### 1.3.1 (Feb 10, 2016)
+### Bugfixes
 
-- Internal: Babel 6 and Flow definitions
-- Bugfix: 1.3.0 broke string bounds ('parent', selectors, etc.).
-- Bugfix: 1.3.0 wasn't updating deltaX and deltaY on a bounds hit.
+- Fix `shouldComponentUpdate` interfering with droppability ([#1152](https://github.com/STRML/react-grid-layout/issues/1152))
 
-### 1.3.0 (Feb 10, 2016)
+### Internal Changes
 
-- Possibly breaking change: bounds are calculated before `<Draggable>` fires `drag` events, as they should have been.
-- Added `'none'` axis type. This allows using `<Draggable>` somewhat like `<DraggableCore>` - state will be kept
-  internally (which makes bounds checks etc possible), but updates will not be flushed to the DOM.
-- Performance tweaks.
+- New Enzyme test suite added to prevent regression. If you have time, we could really use more test cases that reflect your use cases!
 
-### 1.2.0 (Feb 5, 2016)
+## 0.18.2 (Feb 26, 2020)
 
-- Added arbitrary boundary selector. Now you don't have to just use `'parent'`, you can select any element
-  on the page, including `'body'`.
-- Bugfix: Prevent invariant if a `<Draggable>` is unmounted while dragging.
-- Bugfix: Fix #133, where items would eagerly start dragging off the mouse cursor if you hit boundaries and
-  came back. This is due to how `<DraggableCore>` handles deltas only and does not keep state. Added new state
-  properties `slackX` and `slackY` to `<Draggable>` to handle this and restore pre-v1 behavior.
+### Bugfixes
 
-### 1.1.3 (Nov 25, 2015)
+- `shouldComponentUpdate`:
+  - A too-aggressive implementation of `shouldComponentUpdate` was shipped in 0.18.0-0.18.1 ([#1123](https://github.com/STRML/react-grid-layout/pull/1123)), which did not compare the `children` object. While this works well in many simple implementations of RGL, it breaks in more complex applications.
+  - Reference equality of `props.children` and `nextProps.children` is now added to `<ReactGridLayout>` and `<GridItem>`. If you wish to take advantage of the performance improvements from the `shouldComponentUpdate` work, memoize your children.
+  - A section has been added to the [README](/README.md#Performance) explaining how this works.
+  - Fixed [#1150](https://github.com/STRML/react-grid-layout/issues/1150), [#1151](https://github.com/STRML/react-grid-layout/issues/1151).
 
-- Bugfix: Server-side rendering with react-rails, which does bad things like mock `window`
+## 0.18.1 (Feb 25, 2020)
 
-### 1.1.2 (Nov 23, 2015)
+This release contains typedef changes only.
 
-- Bugfix: `<Draggable>` was calling back with clientX/Y, not offsetX/Y as it did pre-1.0. This unintended
-  behavior has been fixed and a test has been added.
+### Bugfixes
 
-### 1.1.1 (Nov 14, 2015)
+- Flow types:
+  - Make Props to `<ReactGridLayout>` and `<ResponsiveReactGridLayout>` exact.
+  - Fix loss of props refinement when passing through `WidthProvider`.
+  - Fix Flow errors as surfaced in [#1138](https://github.com/STRML/react-grid-layout/pull/1138).
+  - Modify examples to use types so that the above type error can't resurface
 
-- Bugfix: Clean up scroll events if a component is unmounted before drag stops.
-- Bugfix: `NaN` was returning from scroll events due to event structure change.
-- Add scroll drag modulation test.
+## 0.18.0 (Feb 25, 2020)
 
-### 1.1.0 (Nov 14, 2015)
+Thanks to all of our maintainers for this big release. 0.18.0 contains a large number of bugfixes that users have been asking for. Please read the full list so you know what to expect. Some of the biggest improvements include fixing changes of `isResizable`/`isDraggable` without a remount ([#892](https://github.com/STRML/react-grid-layout/pull/892)), fixes to prop changes on `ResponsiveReactGridLayout` ([#1090](https://github.com/STRML/react-grid-layout/pull/1090)), `shouldComponentUpdate` improvements for speed ([#1123](https://github.com/STRML/react-grid-layout/pull/1123)), improvements to droppability ([#1127](https://github.com/STRML/react-grid-layout/pull/1127)), and much more.
 
-- Move `grid` into `<DraggableCore>` directly. It will continue to work on `<Draggable>`.
-- Development fixes.
+### (Potentially) Breaking Changes
 
-### 1.0.2 (Nov 7, 2015)
+- You can now locally set `isDraggable`/`isResizable` on a `static` item and it will have that property. This could be useful, but be sure to check your layouts if you use `static`. Relates to [#1060](https://github.com/STRML/react-grid-layout/pull/1060).
+- `shouldComponentUpdate` is now implemented on major components to improve render speed while you manipulate the layout. In our testing there are no issues. If you encounter one, please open an issue asap and we'll get it fixed. See [#1123](https://github.com/STRML/react-grid-layout/pull/1123).
 
-- Fix `enableUserSelectHack` not properly disabling.
-- Fix a crash when the user scrolls the page with a Draggable active.
+### New Features
 
-### 1.0.1 (Oct 28, 2015)
+- You can now manipulate `isDraggable`/`isResizable` without the child component remounting. We do this by always rendering the child `<Resizable>` and `<Draggable>` wrappers, optionally in a `disabled` state. This feature has been heavily requested. [#892](https://github.com/STRML/react-grid-layout/pull/892)
+- The event is now passed as `e` on the `onDrop` callback. [#1065](https://github.com/STRML/react-grid-layout/pull/1065)
+- Pass `transformScale` to `Resizable`. [#1075](https://github.com/STRML/react-grid-layout/pull/1075)
 
-- Fix missing dist files for webpack.
-- Ignore non-primary clicks. Added `allowAnyClick` option to allow other click types.
+### Bugfixes
 
-### 1.0.0 (Oct 27, 2015)
+- Fix handling of width changes in `ResponsiveReactGridLayout`. [#1090](https://github.com/STRML/react-grid-layout/pull/1090)
+  - Fixes ignored changes of breakpoints and columns. See also [issue #1083](https://github.com/STRML/react-grid-layout/issues/1083).
+- Forbid layout change on click without drag. [#1044](https://github.com/STRML/react-grid-layout/pull/1044)
+- Do not mutate `layouts` prop. [#1064](https://github.com/STRML/react-grid-layout/pull/1064)
+- Ensure locally set `isDraggable`/`isResizable` on a `GridItem` overrides the global setting on the layout. [#1060](https://github.com/STRML/react-grid-layout/pull/1060)
+- Avoid additional element jumping when an item is dropped. [#1127](https://github.com/STRML/react-grid-layout/issues/1127)
+- Don't use `String#includes` for Firefox test. [#1096](https://github.com/STRML/react-grid-layout/pull/1096)
 
-- Breaking: Removed `resetState()` instance method
-- Breaking: Removed `moveOnStartChange` prop
-- Breaking: React `0.14` support only.
-- Refactored project.
-- Module now exports a `<DraggableCore>` element upon which `<Draggable>` is based.
-  This module is useful for building libraries and is completely stateless.
+### Internal Refactors
 
-### 0.8.5 (Oct 20, 2015)
+- Added `shouldComponentUpdate` to major elements for speed. Significant [performance improvements](https://github.com/STRML/react-grid-layout/pull/1032#issuecomment-541604763) while dragging. Started in [#1032](https://github.com/STRML/react-grid-layout/pull/1032) and finished in [#1123](https://github.com/STRML/react-grid-layout/pull/1123).
+  - A [fun trick for the curious](https://github.com/STRML/react-grid-layout/blob/44e200067b3640c3230f5511e8624a7c629d2f9a/lib/fastRGLPropsEqual.js).
+- Internal refactor of dropping capability. It is now more predictable and uses similar unit labels (`left`, `top`) to other features. [#1128](https://github.com/STRML/react-grid-layout/issues/1128)
+- Upgrade devDependencies.
+- Remove ESPower from test suite (not useful with Jest).
 
-- Bugfix: isElementSVG no longer can be overwritten by getInitialState (#83)
-- Bugfix: Fix for element prefixes in JSDOM
+  0.17.1 (Oct 29, 2019)
 
-### 0.8.4 (Oct 15, 2015)
+---
 
-- Bugfix: SVG elements now properly use `transform` attribute instead of `style`. Thanks @martinRoss
+### Bugfixes
 
-### 0.8.3 (Oct 12, 2015)
+- Surround `navigator` check in `try/catch` to avoid problems with mocked navigators [#1057](https://github.com/STRML/react-grid-layout/pull/1054)
+- TransformScale is not applied properly while dragging an element [#1046](https://github.com/STRML/react-grid-layout/pull/1054)
 
-- Bugfix: Short-circuiting drag throws due to `e.changedTouches` check.
+  0.17.0 (Oct 24, 2019)
 
-### 0.8.2 (Sep 21, 2015)
+---
 
-- Handle scrolling while dragging. (#60)
-- Add multi-touch support. (#68)
-- IE fixes.
-- Documentation updates. (#77)
+It's been 18 months since the last release, and this is a pretty large one! For references on the items below, see https://github.com/STRML/react-grid-layout/milestone/1?closed=1.
 
-### 0.8.1 (June 3, 2015)
+Thanks to @daynin and @n1ghtmare for taking an active role in maintaining RGL, and for giving it a much-needed shot in the arm, and thanks to the rest of our contributors.
 
-- Add `resetState()` instance method for use by parents. See README ("State Problems?").
+### New Features
 
-### 0.8.0 (May 19, 2015)
+- Added ability to drag items into the grid from outside. [#980](https://github.com/STRML/react-grid-layout/pull/980). See [the example](https://react-grid-layout.github.io/react-grid-layout/examples/15-drag-from-outside.html).
+  - This is especially exciting as it opens up new "widget toolbox" use cases such as [Example 14](https://react-grid-layout.github.io/react-grid-layout/examples/14-toolbox.html) with more intuitive interaction. Thanks @daynin.
+- `transformScale` prop [#987](https://github.com/STRML/react-grid-layout/pull/987)
+- `<ResponsiveReactGridLayout>` now supports margin-per-breakpoint [#1016](https://github.com/STRML/react-grid-layout/pull/1016)
 
-- Touch/mouse events rework. Fixes #51, #37, and #43, as well as IE11 support.
-- Moved mousemove/mouseup and touch event handlers to document from window. Fixes IE9/10 support.
-  IE8 is still not supported, as it is not supported by React.
+### Bugfixes
 
-### 0.7.4 (May 18, 2015)
+- `onWidthChange` only called on breakpoint changes [#770](https://github.com/STRML/react-grid-layout/pull/770)
+- Various movement bugs when compaction is off [#766](https://github.com/STRML/react-grid-layout/pull/766)
+- Don't fire `onDragStop` if an item is only clicked, not dragged [#1023](https://github.com/STRML/react-grid-layout/pull/1023)
+- Fix infinite loop when dragging over a static element. [#1019](https://github.com/STRML/react-grid-layout/pull/1019)
 
-- Fix a bug where a quick drag out of bounds to `0,0` would cause the element to remain in an inaccurate position,
-  because the translation was removed from the CSS. See #55.
+### Internal Refactors
 
-### 0.7.3 (May 13, 2015)
+- Both `react-draggable` and `react-resizable` dependencies are now React 16.9 compatible, as is now `react-grid-layout`.
+  - [RGL PR #990](https://github.com/STRML/react-grid-layout/pull/990)
+  - [react-resizable](https://github.com/STRML/react-resizable/pull/112/commits/541dee69b8e45d91a533855609472b481634edee)
+  - [react-draggable](https://github.com/mzabriskie/react-draggable/commit/fea778c8e89db2a4e1a35e563b65634f8146e7e4)
+- Webpack 4 [#907](https://github.com/STRML/react-grid-layout/pull/907)
+- Babel 7 [#1013](https://github.com/STRML/react-grid-layout/pull/1013)
+- Flow 0.110 [#995](https://github.com/STRML/react-grid-layout/pull/995)
+- Jest [#774](https://github.com/STRML/react-grid-layout/pull/774)
+- Various build simplifications [#773](https://github.com/STRML/react-grid-layout/pull/773)
+- Various PR bots - thanks @daynin
 
-- Removed a `moveOnStartChange` optimization that was causing problems when attempting to move a `<Draggable>` back
-  to its initial position. See https://github.com/STRML/react-grid-layout/issues/56
+  0.16.6 (Mar 8, 2018)
 
-### 0.7.2 (May 8, 2015)
+---
 
-- Added `moveOnStartChange` property. See README.
+- Fixed collision issue where items below could rearrange on a move.
+  - The root cause was "teleportation", or practically the same bug that leads to Pac-Man going through
+    ghosts now and then. If a large element moves up by a few grid units, the space it vacates can suddenly
+    become occupiable by an element below it. Rather than the collision happening properly, they exchange spaces
+    atomically. The fix is to move items down one grid unit at a time to ensure
+    this rearrangement does not happen.
+  - Thanks @torkelo for your hard work on this for Grafana 5, which I very unfortunately managed to break
+    when refactoring for 0.16.1.
+  - Ref: #650, #739
+- Added a "Toolbox" demo (thanks @jhob)
 
-### 0.7.1 (May 7, 2015)
+  0.16.5 (Feb 26, 2018)
 
-- The `start` param is back. Pass `{x: Number, y: Number}` to kickoff the CSS transform. Useful in certain
-  cases for simpler callback math (so you don't have to know its existing relative position and add it to
-  the dragged position). Fixes #52.
+---
 
-### 0.7.0 (May 7, 2015)
+- Minor fix to `isUserAction` on certain types of compaction cascades (#714, #720, #729)
 
-- Breaking change: `bounds` with coordinates was confusing because it was using the item's width/height,
-  which was not intuitive. When providing coordinates, `bounds` now simply restricts movement in each
-  direction by that many pixels.
+  0.16.4 (Feb 15, 2018)
 
-### 0.6.0 (May 2, 2015)
+---
 
-- Breaking change: Cancel dragging when onDrag or onStart handlers return an explicit `false`.
-- Fix sluggish movement when `grid` option was active.
-- Example updates.
-- Move `user-select:none` hack to document.body for better highlight prevention.
-- Add `bounds` option to restrict dragging within parent or within coordinates.
+- Skip null items in processGridItem (#578)
+- Resize is broken for grids with preventCollision: true, fixes #655 (#656)
+- Minor refactoring
 
-### 0.5.0 (May 2, 2015)
+  0.16.3 (Jan 31, 2018)
 
-- Remove browserify browser config, reactify, and jsx pragma. Fixes #38
-- Use React.cloneElement instead of addons cloneWithProps (requires React 0.13)
-- Move to CSS transforms. Simplifies implementation and fixes #48, #34, #31.
-- Fixup linting and space/tab errors. Fixes #46.
+---
 
-### 0.4.3 (Apr 30, 2015)
+- Fix overriding of `onStart` behaviour (#707, thanks @ersel)
+- Fixed Flow type of WidthProvider
+- Devdep updates
 
-- Fix React.addons error caused by faulty test.
+  0.16.2 (Dec 17, 2017)
 
-### 0.4.2 (Apr 30, 2015)
+---
 
-- Add `"browser"` config to package.json for browserify imports (fix #45).
-- Remove unnecessary `emptyFunction` and `React.addons.classSet` imports.
+- Fix `onLayoutChange` not firing properly due to regression introduced in 0.16.1
+  - Ref: https://github.com/STRML/react-grid-layout/issues/683
+- Simpler resize corner CSS (thanks @TrySound)
+- Reformat code with Prettier & simplify lint configs (thanks @TrySound)
 
-### 0.4.1 (Apr 30, 2015)
+  0.16.1 (Dec 10, 2017)
 
-- Remove react/addons dependency (now depending on `react` directly).
-- Add MIT License file.
-- Fix an issue where browser may be detected as touch-enabled but touch event isn't thrown.
+---
 
-### 0.4.0 (Jan 03, 2015)
+- Flow def upgrades (thanks @TrySound)
+- DevDep upgrades
+- Fixed WebpackBin demo
+- Addl test cases (thanks @torkelo)
 
-- Improving accuracy of snap to grid
-- Updating to React 0.12
-- Adding dragging className
-- Adding reactify support for browserify
-- Fixing issue with server side rendering
+  0.16.0 (Oct 6, 2017)
 
-### 0.3.0 (Oct 21, 2014)
+---
 
-- Adding support for touch devices
+- Added horizontal compaction option, `compactType` (thanks @Rhjulskov)
+- Added `preventCollision` option for static grids (thanks @EmrysMyrddin)
 
-### 0.2.1 (Sep 10, 2014)
+  0.15.2 (Sep 5, 2017)
 
-- Exporting as ReactDraggable
+---
 
-### 0.2.0 (Sep 10, 2014)
+- Fix missed `import *`
+- Dependency updates
 
-- Adding support for snapping to a grid
-- Adding support for specifying start position
-- Ensure event handlers are destroyed on unmount
-- Adding browserify support
-- Adding bower support
+  0.15.1 (Sep 5, 2017)
 
-### 0.1.1 (Jul 26, 2014)
+---
 
-- Fixing dragging not stopping on mouseup in some cases
+- Fix React PropTypes & createClass warnings
 
-### 0.1.0 (Jul 25, 2014)
+  - See https://github.com/facebook/react/issues/10583
 
-- Initial release
+    0.15.0 (Aug 21, 2017)
+
+---
+
+- Package upgrades, including Webpack 3
+- Flow typedef upgrades for the 0.53 rework
+- Add faulty key value in duplicate key error message (#602)
+
+  0.14.7 (Jul 14, 2017)
+
+---
+
+- Fixed a dragging bug when the grid container is scrollable. Thanks @chultquist.
+
+  - Ref: https://github.com/STRML/react-grid-layout/pull/555
+
+    0.14.6 (Apr 19, 2017)
+
+---
+
+- Fixed a bad publish (connectivity issue).
+
+  0.14.5 (Apr 19, 2017)
+
+---
+
+- Moved to `prop-types` package to avoid React.PropTypes deprecation in 15.5. Thanks @inverts!
+
+  0.14.4 (Mar 9, 2017)
+
+---
+
+#### Fixes:
+
+- Typecheck in `WidthProvider` to satisfy Flow (and technically, this could be a Text node)
+
+##### Dev:
+
+- Update Flow
+
+  0.14.3 (Feb 22, 2017)
+
+---
+
+#### Fixes:
+
+- Reverted #499; `msTransform` is indeed correct. See [discussion](https://github.com/STRML/react-grid-layout/pull/499#issuecomment-281703069).
+
+  0.14.2 (Feb 22, 2017)
+
+---
+
+#### Fixes:
+
+- Fixed use of `MSTranform` for IE. Thanks @dvoaviarison (#499)
+- Fix generation of source maps, which was temporarily broken by the webpack 2 upgrade.
+
+#### Internal:
+
+- Update development dependencies and babel version.
+
+  0.14.1 (Feb 20, 2017)
+
+---
+
+#### Fixes:
+
+- Fixed a minor Flow type issue when a `classnames` typedef is present.
+- Fixed a scoping issue when running `make build-example`.
+
+  0.14.0 (Feb 13, 2017)
+
+---
+
+#### Features:
+
+- New test suite - thanks @nikolas
+- Dev Dependency updates
+- Committed yarn.lock
+- Added `react-draggable` classname to draggable grid items.
+
+  0.13.9 (Oct 13, 2016)
+
+---
+
+#### Fixes:
+
+- Fixed sorting of layout items, which could be different in IE if two items have the same x & y coordinate.
+
+  - See [#369](https://github.com/STRML/react-grid-layout/issues/369).
+
+    0.13.8 (Oct 13, 2016)
+
+---
+
+#### Fixes:
+
+- Fixed breakage introduced in `0.13.7` when items are added without a layout or `data-grid` property.
+
+  - See [#368](https://github.com/STRML/react-grid-layout/issues/368).
+
+    0.13.7 (Oct 3, 2016)
+
+---
+
+#### Fixes:
+
+- Fixed an error during layout sync if children was a keyed fragment or had nested arrays.
+- Fixed `onLayoutChange` being called when layout didn't change.
+- Fixed some issues with input layout items being modified in-place rather than cloned.
+- Minor typos.
+
+  0.13.6 (Sep 26, 2016)
+
+---
+
+#### Fixes:
+
+- Fixed missing HTMLElement in `onResize*` callbacks.
+
+  0.13.5 (Sep 9, 2016)
+
+---
+
+#### Fixes:
+
+- Fixed a few Flow typing errors in `WidthProvider`.
+
+  0.13.4 (Sep 9, 2016)
+
+---
+
+#### Fixes:
+
+- Fixed potential call to `ReactDOM.findDOMNode(this)` after unmount of `WidthProvider`.
+- Fixed an issue where layout items using `data-grid` could rearrange on mount depending on how they were ordered.
+
+  - See [#342](https://github.com/STRML/react-grid-layout/pull/342) for reference.
+
+    0.13.3 (Aug 31, 2016)
+
+---
+
+#### Fixes:
+
+- Fixed `lodash.isequal` import, which was ruined by case-insensitive HFS+ _shakes fist_
+
+  0.13.2 (Aug 31, 2016)
+
+---
+
+#### Fixes:
+
+- Diffing children in order to regenerate the layout now diffs the `key` props and their order.
+  - This will catch more changes, such as sorting, addition, and removal.
+- Only pass `className` and `style` to WidthProvider. Other props were not intended to be supported.
+  - I'm aware this could be a breaking change if you were relying on this bad behavior. If so, please
+    use your own `WidthProvider`-style HOC.
+- `babel-plugin-transform-flow-comments` had limited support for defining types like transpiled classes.
+
+  - This has been updated to instead copy source to `.js.flow` files, which preserves all type information.
+
+    0.13.1 (Aug 16, 2016)
+
+---
+
+#### Fixes:
+
+- Fix remaining `propTypes` warnings.
+
+  0.13.0 (Aug 3, 2016)
+
+---
+
+#### Changed:
+
+- Due to a change in React 15.2, passing the `_grid` property on DOM children generates an error.
+  To compensate, we now error on the same and suggest using `data-grid` instead. Simply change any use of
+  `_grid` to `data-grid`, or add your properties to the layout.
+
+#### Fixes:
+
+- Fix React 15.3 warning re: propTypes.
+
+  0.12.7 (Jun 29, 2016)
+
+---
+
+- Prevent extraenous rerenders in `<ResponsiveReactGridLayout>` by using deep equality on layouts.
+
+  0.12.6 (Jun 5, 2016)
+
+---
+
+- Fix blindingly obvious bug where mounted isn't set to true. Smack forehead.
+
+  0.12.5 (Jun 3, 2016)
+
+---
+
+- Fixes for server rendering checksum failures.
+
+  0.12.4 (May 22, 2016)
+
+---
+
+- Update to React-Draggable v2. Fixes: #241, #239, #24
+
+  - v2 contains a number of bugfixes & enhancements for touchscreens, multitouch, and scrolling containers.
+
+    0.12.3 (May 3, 2016)
+
+---
+
+- Bugfix: Rendering with new `breakpoints`/`cols` does not refresh the layout.
+  Fixes #208 - thanks @damienleroux
+
+  0.12.2 (May 1, 2016)
+
+---
+
+- Bugfix: Fix warning about undefined `useCSSTransforms` when server-rendering.
+
+  0.12.1 (Apr 19, 2016)
+
+---
+
+- Bugfix: Don't set `layout` twice on width change. See #217 - thanks @damienleroux
+- Enhancement: Add Flow type comments
+
+  0.12.0 (Apr 14, 2016)
+
+---
+
+- `<ReactGridLayout>` will no longer animate so severely on mount. See #212.
+  - If you are using `<WidthProvider>`, you may notice that the container's width still shunts on mount.
+    If you like, you may delay mounting by setting `measureBeforeMount={true}` on the wrapped element. This
+    will eliminate the mounting animation completely.
+  - If you enjoyed the old animation, set `useCSSTransforms={this.state.mounted}` and toggle the mounting
+    flag. See `0-showcase.jsx` for an example.
+- Set more permissive version ranges for `<Draggable>` and `<Resizable>` dependencies, as they are now stable
+  and will only introduce breaking changes on major version ticks.
+
+  0.11.3 (Apr 8, 2016)
+
+---
+
+- Officially support React v15.
+
+  0.11.2 (Apr 6, 2016)
+
+---
+
+- Bugfix: Draggable cancel selectors, see #203 - thanks @RiiD
+- README fixes, thanks @bravo-kernel & @ro-savage
+
+  0.11.1
+
+---
+
+- Bugfix: `<ResponsiveReactGridLayout>` was using stale data when synchronizing children with the layout
+  on a breakpoint change.
+
+  0.11.0
+
+---
+
+This release contains potentially breaking changes so I have updated the minor version (as per semver).
+
+**Breaking Changes**:
+
+- Layout items now have a fixed set of properties. Other properties will _not_ be merged into the `<GridItem>`, such
+  as `className`. To set a `className` on a child, set it on the child directly and it will be merged.
+  This allows us to make better assumptions about the layout and use a faster cloning mechanism.
+- Setting individual `handle` and `cancel` selectors per item is no longer supported. If you need this, please
+  open a ticket and let me know your use case.
+
+Other changes:
+
+- Bugfix: `<ResponsiveReactGridLayout>` `onLayoutChange` callback data could still be stale.
+- Bugfix: Range error when building layout solely from `_grid` properties.
+  - This broke a lot of usage and thus `0.10.11` and `0.10.10` have been unpublished.
+- Removed redundant `isPlaceholder` property from `<GridItem>`.
+- README updates to clarify layout/\_grid usage.
+
+  0.10.11
+
+---
+
+- Bugfix: `layouts` param on `<ResponsiveReactGridLayout>`'s `onLayoutChange` could have stale data
+  for the current breakpoint.
+
+  0.10.10
+
+---
+
+- Performance: Prevent V8 deopt in a few methods and add fast layout item cloning.
+
+  0.10.9
+
+---
+
+- Bugfix: Typo in children comparison in CWRP. See #169.
+- Bugfix: Missing babel-preset-es2015 in dev.
+
+  0.10.8
+
+---
+
+- Rebuild using [ES2015 Loose Mode](https://babeljs.algolia.com/docs/advanced/loose/).
+
+  0.10.7
+
+---
+
+- Bugfix: `className` and `style` props on grid children were being incorrectly dropped, a holdover
+  from when `cloneWithProps()` used to do this merging for us. They are now merged.
+
+  0.10.6
+
+---
+
+- Bugfix: If both `props.layout` and `props.children.length` change in the same tick,
+  props.layout would be clobbered. See #162
+
+  0.10.5
+
+---
+
+- Bugfix/Enhancement: Margins were causing subtle error in some of the positioning calculations. This has
+  been fixed.
+
+  0.10.4
+
+---
+
+- Bugfix: Container height was calculated as less than expected due to improper addition of margin.
+
+  0.10.3
+
+---
+
+- Bugfix: Round item positions even if they're currently resizing or dragging (#158, regression of #141)
+- Bugfix: Fix a positioning bug when margins are 0 (#160)
+
+  0.10.2
+
+---
+
+- Bugfix: <RGL> would synchronize children with layout if the layout in props didn't match the state;
+  this was meant to be a hook for the developer to supply a new layout. The incorrect check could cause the
+  layout to reset if the parent rerendered. The check is now between the layout in nextProps and props.
+- Bugfix: Fixed a lot of resizing layout bugs; most of the fixes are in react-resizable.
+- Bugfix: Fixed incorrect typecheck on LayoutItem.i.
+- Bugfix: Make onLayoutChange fire appropriately (#155).
+- Bugfix: Fix `<ResponsiveGridLayout>` not properly reverting when sizing the page up (#154).
+- Remove unused `offsetX` and `offsetY` from layouts.
+- Dependency updates.
+
+  0.10.1
+
+---
+
+- Hotfix for default export incompatibility caused by Babel 6.
+
+  0.10.0
+
+---
+
+This long-awaited release provides React 0.14 compatibility and a rewrite of the underlying
+`<Draggable>` functionality.
+
+**Breaking changes:**
+
+- `ListensToWidth` replaced with `WidthProvider` which must wrap
+  `<ResponsiveReactGridLayout>` and `<ReactGridLayout>` to provide width data. See doc for example.
+- Prop `initialWidth` renamed to `width`.
+- Grid Layout keys must be type of string now.
+
+Other changes:
+
+- _Finally_ compatible with React 0.14! Big thanks to @menelike for his help.
+- Upgraded to Babel 6.
+- Full typechecking via Flow.
+- Lots of misc bugfixes.
+
+  - See beta releases below for more details.
+
+    0.10.0-beta1
+
+---
+
+- Fixed a React import bug on ListensToWidth.jsx (#130; thanks @mrblueblue)
+
+  0.10.0-beta0
+
+---
+
+_This release is unstable!_
+
+- React 0.14 compatibility.
+- This release includes a rewrite of much of the project in ES6/7 style with Flow typing.
+- This release brings us onto mainline (1.x) react-draggable and react-resizable, eliminating
+  the previous github dependency.
+- 0.10.0 is not yet complete. Use this release at your own risk.
+
+Known bugs:
+
+- The placeholder box does not properly follow the mouse and stays pinned to the active drag.
+
+## 0.9.2
+
+- Update `react-draggable` to `v0.8.0` to fix IE11 issues (#29).
+
+  0.9.1
+
+---
+
+- Update `react-draggable` to `v0.7.3` to fix a bounds bug (#56).
+
+  0.9.0
+
+---
+
+- Move off `react-draggable` fork to mainline `v0.7.2`. Incremented minor (major in the case of
+  npm's `^`, since we are pre-v1) version in case of unforeseen conflicts.
+
+  0.8.3
+
+---
+
+- Add `verticalCompact` toggle.
+
+  0.8.2
+
+---
+
+- Fix a crash when initializing with no children.
+
+  0.8.1
+
+---
+
+- Fixed React 0.13 warning about `isMounted()`.
+- Update to babel 5.
+- Added browser build for use with a `<script>` tag or in RequireJS builds.
+- Pinned react-draggable version in anticipation of React 0.13 update.
+
+  0.8.0
+
+---
+
+- Changed signature on resize/drag callbacks to allow dynamic max/min W/H per item.
+- Fixed bug in `useCSSTransforms`.
+- Documentation and example fixes.
+
+  0.7.1
+
+---
+
+- Added callbacks for resize and drag start/active/stop.
+
+  0.7.0
+
+---
+
+**Breaking changes:**
+
+- `ReactGridLayout.props.handle` renamed to `ReactGridLayout.props.draggableHandle`.
+
+> This version contains a CSS update. This fixes a visual bug where you may see items quickly reset position
+> and animate back to their original position on load, when you are using CSS transforms. To fix this bug,
+> copy the rules from css/styles.css into your stylesheet.
+
+Other changes:
+
+- Fixed #19 (bad new item placement with css transforms).
+- Fixed some placement inconsistencies while RGL is mounting, with css transforms and percentages.
+- Fixed a duplicate className bug.
+
+  0.6.2
+
+---
+
+- Fix #21 (error when passing only a single child).
+- Add GridItem.props.cancel.
+- Use React addons directly to save file size.
+- Allow setting draggable/resizable per grid item, as well as existing `static` property.
+- Use object.assign to set `_grid` properties so we can more easily merge PRs in the future.
+
+  0.6.1
+
+---
+
+- Fixed #8 (current layout was not properly being stored when provided via \_grid props).
+
+  0.6.0
+
+---
+
+- Optionally use CSS transforms for placement, fallback on position top/left.
+- Allow parent to set responsive breakpoint directly.
+
+  0.5.2
+
+---
+
+- Fix Responsive import for node users
+
+  0.5.1
+
+---
+
+- Add support for min/max dimension attributes.
+- Example tweak
+
+  0.5.0
+
+---
+
+- Refactoring and demo tweaks. Update README with new params.
+- Add showcase example, tweak template
+- Refactor: Responsive Grid Layout is a separate element
+- Auto-generate examples from template rather than edit them individually.
+
+  0.4.0
+
+---
+
+- Force lodash into commons chunk
+- More tweaks to grid collisions. This should fix bad swaps once and for all.
+- Set unused:"vars" in lint.
+- Add responsive localstorage example and `initialLayouts` support.
+- Fix localstorage example comment.
+- Rework responsive layouts, identify child elements by key rather than index. Added 2 new examples.
+- Fixup GridItem resizing feel a bit.
+
+## < 0.4.0
+
+- Early development versions, too many changes to list.

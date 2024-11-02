@@ -1,43 +1,75 @@
-# Mostly lifted from https://andreypopp.com/posts/2013-05-16-makefile-recipes-for-node-js.html
-# Thanks @andreypopp
+.DELETE_ON_ERROR:
 
-# Make it parallel
-MAKEFLAGS += j4
-export BIN := $(shell yarn bin)
-.PHONY: test dev lint build build-cjs build-esm build-web clean install link publish
-.DEFAULT_GOAL := build
+EXEC = npm exec --
+DIST = ./dist
+BUILD = ./build
+LIB = ./lib
+TEST = ./test
+MIN = $(DIST)/react-grid-layout.min.js
+MIN_MAP = $(DIST)/react-grid-layout.min.js.map
+
+.PHONY: test dev lint build clean install link
+
+
+build: clean build-js $(MIN)
 
 clean:
-	rm -rf build
-	mkdir -p build
+	rm -rf $(BUILD) $(DIST)
 
-lint:
-	@$(BIN)/flow
-	@$(BIN)/eslint lib/* lib/utils/* specs/*
-	@$(BIN)/tsc -p typings
-
-build: clean build-cjs build-esm build-web
-
-build-cjs: $(BIN)
-	$(BIN)/babel --out-dir ./build/cjs ./lib
-
-build-web: $(BIN)
-	$(BIN)/webpack --mode=production
+dev:
+	@$(EXEC) webpack serve --config webpack-dev-server.config.js \
+	  --hot --progress
 
 # Allows usage of `make install`, `make link`
 install link:
-	@yarn $@
+	@npm $@
 
-test: $(BIN)
-	@$(BIN)/karma start
+# Build browser module
+dist/%.min.js: $(LIB) $(BIN)
+	@$(EXEC) webpack
 
-test-phantom: $(BIN)
-	@$(BIN)/karma start karma-phantomjs.conf.js
+build-js:
+	@$(EXEC) babel --out-dir $(BUILD) $(LIB)
 
-dev: $(BIN) clean
-	env DRAGGABLE_DEBUG=1 $(BIN)/webpack serve --mode=development
+# Will build for use on github pages. Full url of page is
+# https://react-grid-layout.github.io/react-grid-layout/examples/0-showcase.html
+# so the CONTENT_BASE should adapt.
+build-example:
+	@$(EXEC) webpack --config webpack-examples.config.js
+	env CONTENT_BASE="/react-grid-layout/examples/" node ./examples/generate.js
 
-node_modules/.bin: install
+# Note: this doesn't hot reload, you need to re-run to update files.
+# TODO fix that
+view-example:
+	env CONTENT_BASE="/react-grid-layout/examples/" node ./examples/generate.js
+	@$(EXEC) webpack serve --config webpack-examples.config.js --progress
+
+# FIXME flow is usually global
+lint:
+	@$(EXEC) flow
+	@$(EXEC) eslint --ext .js,.jsx
+
+test:
+	env NODE_ENV=test $(EXEC) jest --coverage
+
+test-watch:
+	env NODE_ENV=test $(EXEC) jest --watch
+
+test-update-snapshots:
+	env NODE_ENV=test $(EXEC) jest --updateSnapshot
+
+release-patch: build lint test
+	@$(call release,patch)
+
+release-minor: build lint test
+	@$(call release,minor)
+
+release-major: build lint test
+	@$(call release,major)
+
+publish:
+	git push --tags origin HEAD:master
+	npm publish
 
 define release
 	VERSION=`node -pe "require('./package.json').version"` && \
@@ -47,6 +79,7 @@ define release
 			var j = require(fileName);\
 			j.version = \"$$NEXT_VERSION\";\
 			var s = JSON.stringify(j, null, 2);\
+<<<<<<< HEAD
 			require('fs').writeFileSync(fileName, s);\
 		});" && \
 	git add package.json CHANGELOG.md && \
@@ -66,3 +99,12 @@ release-major: test
 publish: build
 	git push --tags origin HEAD:master
 	yarn publish
+=======
+			require('fs').writeFileSync(fileName, s + '\\n');\
+		});" && \
+	git add package.json CHANGELOG.md $(MIN) $(MIN_MAP) && \
+	git commit -nm "release $$NEXT_VERSION" && \
+	git tag "$$NEXT_VERSION" -m "release $$NEXT_VERSION"
+	npm pack --dry-run
+endef
+>>>>>>> 04a778264b056a024334d33d17305a57970ccc40
